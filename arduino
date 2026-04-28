@@ -1,0 +1,54 @@
+#include <WiFi.h>
+#include <ESPAsyncWebServer.h>
+
+const char *ssid = "ESP32_LostItemFinder";
+const char *password = "123456789";
+
+AsyncWebServer server(80);
+
+const int buzzerPin = 25;
+const int ledPin = 26;
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  pinMode(buzzerPin, OUTPUT);
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(buzzerPin, LOW);
+  digitalWrite(ledPin, LOW);
+
+  // AP mode only is fine now — no scanning needed
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid, password);
+
+  Serial.println("ESP32 AP Started");
+  Serial.print("AP IP: ");
+  Serial.println(WiFi.softAPIP());
+
+  // ✅ Simple ping — just returns "OK"
+  // Flutter will measure signal strength on its own side
+  server.on("/ping", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "OK");
+  });
+
+  // Trigger buzzer
+  server.on("/trigger", HTTP_GET, [](AsyncWebServerRequest *request) {
+    digitalWrite(buzzerPin, HIGH);
+    digitalWrite(ledPin, HIGH);
+    delay(1500);
+    digitalWrite(buzzerPin, LOW);
+    digitalWrite(ledPin, LOW);
+    request->send(200, "text/plain", "Triggered");
+  });
+
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+    request->send(200, "text/plain", "ESP32 Lost Item Finder OK");
+  });
+
+  server.begin();
+}
+
+void loop() {
+  // Nothing needed here
+}
